@@ -23,4 +23,9 @@
 #define BITSCLEAR(x,y) (((x) & (y)) == 0)
 //#define BITVAL(x,y) (((x)>>(y)) & 1) 
 
+// EEPROM Data Locations 
+#define EE_CAN_SPEED 0x00
+#define EE_NODE_ID   0x01
+#define EE_BAUD      0x02
+
 #endif

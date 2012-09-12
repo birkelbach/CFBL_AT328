@@ -14,6 +14,7 @@
 #include <avr/boot.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 #include "mcp2515.h"
 #include <util/delay_basic.h>
 #include "bootloader.h"
@@ -27,9 +28,13 @@ void init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3);
 /* util.S functions */
 void start_app(void);
 
+/* Global Variables */
+uint8_t can_iflag;
+
+
 void
 int0_isr(void) {
-    int ptr = 0;
+    can_iflag = 1;
 	EIFR = 0x00;
 	reti();
 }
@@ -154,12 +159,23 @@ init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3)
 static inline void
 init(void)
 { 
+    uint8_t cnf1=0x03, cnf2=0xb6, cnf3=0x04;
+	uint8_t can_speed = 0;
+
 	init_spi();
-    /* Initialize the MCP2515 at 125kbs */
-	init_can(0x03, 0xB6, 0x04);
+
+	/* Set the CAN speed.  The values for 125k are the defaults so 0 is ignored
+	   and bad values also result in 125k */
+    can_speed = eeprom_read_byte(EE_CAN_SPEED);
+	if(can_speed==BITRATE_250) cnf1=0x01;      /* 250kbps */
+	else if(can_speed==BITRATE_500) cnf1=0x00; /* 500kbps */
+	else if(can_speed==BITRATE_1000) { cnf1=0x00; cnf2=0x92; cnf3=0x02; } /* 1Mbps */
+    /* Initialize the MCP2515 */
+	init_can(cnf1, cnf2, cnf3);
+	
+	init_serial();
 	/* We use the 16 bit timer to handle the boot polling delay */
-    init_serial();
-	TCCR1B=0x05; /* Set Timer/Counter 1 to clk/1024 */
+    TCCR1B=0x05; /* Set Timer/Counter 1 to clk/1024 */
 	/* Move the Interrupt Vector table to the Bootloader section */
 	MCUCR = (1<<IVCE);
 	MCUCR = (1<<IVSEL);
@@ -177,7 +193,7 @@ can_poll(void)
     
 	wb[0]=CAN_READ;
 	wb[1]=CAN_CANINTF;
-    spi_write(&wb,&rb,3);
+    spi_write(wb,rb,3);
     sprintf(text, "Poll=[%2X]\n", rb[2]);
     uart_write(text, 10);
 
@@ -202,7 +218,7 @@ can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data)
     //DEBUG!!
     for(int n=2; n < 15; n ++) {
         sprintf(wb, "Rx=[%2d]=%X\n", n-2, rb[n]);
-        uart_write(wb, 11);
+        uart_write((char *)wb, 11);
     }
     //This is NOT the correct way to reset the flags but....
     wb[0]=CAN_WRITE;
@@ -233,27 +249,22 @@ pgmcrc(int16_t count) {
     return crc;
 }
 
+/* Main Program Routine */
+
 
 int
 main(void)
 {
-    int n;
     uint8_t poll_result;
 	uint16_t can_id, pgm_crc;
 	uint8_t can_data[8];
-    uint8_t wb[16], rb[16];
+    
+    eeprom_write_byte(3, 0x44);
 
 	init();
 	uart_write("Start\n", 6);
 
-	for(n=0; n<64; n++) {
-        boot_page_fill(n*2, n);
-		boot_page_erase(0x0000);
-        boot_spm_busy_wait(); 	
-        boot_page_write(0x0000);
-	    boot_spm_busy_wait(); 
-    }
-    pgm_crc = pgmcrc(28670);
+	pgm_crc = pgmcrc(28670);
 	if(pgm_crc == can_id) start_app();
 
 	while(1) { /* For testing we'll run forever */
@@ -265,10 +276,10 @@ main(void)
 		poll_result = can_poll();
 		if(poll_result & 0x01) {
 		    uart_write("R0\n",3);
-            can_read(0, &can_id, &can_data);
+            can_read(0, &can_id, can_data);
         } else if(poll_result & 0x02) {
 		    uart_write("R1\n",3);
-		    can_read(1, &can_id, &can_data);
+		    can_read(1, &can_id, can_data);
         }
 	}
     
@@ -279,3 +290,19 @@ main(void)
     start_app();
 }
 
+
+
+/* CODE SNIPPITS 
+
+	for(n=0; n<64; n++) {
+        boot_page_fill(n*2, n);
+		boot_page_erase(0x0000);
+        boot_spm_busy_wait(); 	
+        boot_page_write(0x0000);
+	    boot_spm_busy_wait(); 
+    }
+
+
+
+*/
+    

@@ -114,10 +114,10 @@
 #define CAN_BIT_MODIFY 0x05
 
 //Bitrate definitions for the init_can() function
-#define BITRATE_125  1
-#define BITRATE_250  2
-#define BITRATE_500  3
-#define BITRATE_1000 4
+#define BITRATE_125  0
+#define BITRATE_250  1
+#define BITRATE_500  2
+#define BITRATE_1000 3
 
 
 #endif
