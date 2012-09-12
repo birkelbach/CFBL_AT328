@@ -1,0 +1,54 @@
+PetraSoft Aviation, CANFIX Bootloader, Copyright 2011 - Phil Birkelbach
+Last edited 2011-12-29
+
+This is a bootloader program for AVR ATMega328P.  It could be used with other AVR's I'm sure but for now this is the one that I am using.  It's a CANfix bootloader.  It assumes that the CAN protocol is obtained through a Microchip MCP2515 CAN Controller that is connected to the uC via SPI.
+
+The bootstrap.c file is the main source code file.  The Util.S is an assembly language source file for optimizations and specific code placement.  The -nostartfiles directive is passed to the linker to make the code as small as possible so the util.S file has the initializations that we'll need for the program to operate correctly.
+
+Right now the bootstart is set to address 0x3800 and is 2048 words long.  The firmware should be between 0x0000 and 0x37FF
+
+<<Modbus CRC16 Algorithm>>
+
+uint16_t calcrc(uint8_t *ptr, int16_t count) {
+    uint16_t carry;
+    uint16_t crc = 0xffff;
+ 
+    while(count--) {
+        int i = 8;
+        printf("%02X\n", *ptr);
+        crc ^= (uint16_t) *(ptr++);
+    
+        while(i--)
+        {
+            carry = crc & 0x0001;
+            crc >>= 1;
+            if (carry) crc ^= 0xA001;
+        }
+    }
+    return crc;
+}
+
+
+<<XModem CRC16 Algorithm>>
+
+int16_t calcrc(uint8_t *ptr, int16_t count)
+{
+    int16_t crc;
+    uint8_t i;
+   
+    crc = 0;
+    while (--count >= 0)
+    {
+        crc = crc ^ (int16_t) *ptr++ << 8;
+        i = 8;
+        do
+        {
+            if (crc & 0x8000)
+                crc = crc << 1 ^ 0x1021;
+            else
+                crc = crc << 1;
+        } while(--i);
+    }
+    return (crc);
+}
+
