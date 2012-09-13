@@ -1,5 +1,20 @@
-/* PetraSoft Aviation CAN Fix Bootloader for ATMega328P 
- * Copyright 2011 - Phil Birkelbach
+/*  CANFix Bootloader - An Open Source CAN Fix Bootloader for ATMega328P 
+ *  Copyright (c) 2011 Phil Birkelbach
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *
  *
  * This program is designed to be loaded into the bootloader section
  * of the AVR.  This is done by reassigning the .text section to
@@ -18,15 +33,14 @@
 #include "mcp2515.h"
 #include <util/delay_basic.h>
 #include "bootloader.h"
+#include "can.h"
+#include "util.h"
 //#include <stdio.h> /* Debug only!!! */
 
 
 static inline void init(void);
 void spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size);
 void init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3);
-
-/* util.S functions */
-void start_app(void);
 
 /* Global Variables */
 uint8_t can_iflag;
@@ -88,27 +102,7 @@ init_spi()
 }
 
 
-/* Busy loop SPI write.  Takes the contents of *write_buff
-   and sends each bit out the SPI port in turn.  Receives each
-   bit into *read_buff at the end of each write.  Size indicates
-   how many bytes to send.  No interrupts are used it busy waits
-   between writes. The CS bit is fixed in this function.  For
-   systems that only talk to a single SPI slave this is acceptable,
-*/
-void
-spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size)
-{
-    uint8_t ptr = 0;
-    
-    SPI_SS_LOW();
-    while(ptr < size) {
-        SPDR = write_buff[ptr];
-        while( ! (SPSR & 1<<SPIF)); /* Busy wait for SPI */
-        read_buff[ptr] = SPDR;
-        ptr++;
-    }
-    SPI_SS_HIGH();
-}
+
 
 /* Sets up the MCP2515 chip.  
    Sets the CNFx registers according to the arguments.
@@ -184,49 +178,7 @@ init(void)
 	sei();
 }
 
-static inline uint8_t
-can_poll(void)
-{
-    uint8_t wb[2];
-    uint8_t rb[2]={0,0};
-    char text[20];
-    
-	wb[0]=CAN_READ;
-	wb[1]=CAN_CANINTF;
-    spi_write(wb,rb,3);
-    //sprintf(text, "Poll=[%2X]\n", rb[2]);
-    uart_write(text, 10);
 
-	return rb[2];
-}
-
-void
-can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data) 
-{
-    uint8_t wb[15];
-    uint8_t rb[15];
-    
-    uart_write("Reading\n", 8);
-    wb[0]=CAN_READ;
-    if(rxbuff==0) {
-        wb[1]=CAN_RXB0SIDH;
-    } else {
-        wb[1]=CAN_RXB1SIDH;
-    }
-    spi_write(wb,rb,15);
-    
-    //DEBUG!!
-    for(int n=2; n < 15; n ++) {
-        //sprintf(wb, "Rx=[%2d]=%X\n", n-2, rb[n]);
-        uart_write((char *)wb, 11);
-    }
-    //This is NOT the correct way to reset the flags but....
-    wb[0]=CAN_WRITE;
-    wb[1]=CAN_CANINTF;
-    wb[2]=0x00;
-    spi_write(wb,rb,3);
-
-}
 
 /* This is the function that we call periodically during the one
    second startup time to see if we have a bootloader request on
@@ -301,7 +253,8 @@ main(void)
 
 
         _delay_loop_1(SPI_DELAY); /* Delay for CS to be high on MCP2515 */
-		poll_result = can_poll();
+
+/*		poll_result = can_poll();
 		if(poll_result & 0x01) {
 		    uart_write("R0\n",3);
             can_read(0, &can_id, can_data);
@@ -309,6 +262,7 @@ main(void)
 		    uart_write("R1\n",3);
 		    can_read(1, &can_id, can_data);
         }
+*/
 	}	
  	
     

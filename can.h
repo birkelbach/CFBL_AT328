@@ -1,5 +1,5 @@
-/*  CANFix Bootloader - An Open Source CAN Fix Bootloader for ATMega328P 
- *  Copyright (c) 2011 Phil Birkelbach
+/*  CANFix - An Open Source CANBus based Flight Information Protocol
+ *  Copyright (c) 2012 Phil Birkelbach
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,20 +15,21 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
+ *  This file contains definitions and function declarations for the CAN protocol
  */
-#ifndef _BOOTLOADER_H
-#define _BOOTLOADER_H
 
+#ifndef __CAN_H
+#define __CAN_H
 
-// EEPROM Data Locations 
-#define EE_CAN_SPEED 0x00
-#define EE_NODE_ID   0x01
-#define EE_BAUD      0x02
+#include <avr/io.h>
 
-// Program Memory Locations
-#define PGM_LENGTH 0x37FE *2
-#define PGM_CRC    0x37FF *2
+//Bitrate definitions for the init_can() function
+#define BITRATE_125  0
+#define BITRATE_250  1
+#define BITRATE_500  2
+#define BITRATE_1000 3
 
+void can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data);
 
 
 #endif
