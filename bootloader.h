@@ -28,4 +28,8 @@
 #define EE_NODE_ID   0x01
 #define EE_BAUD      0x02
 
+// Program Memory Locations
+#define PGM_LENGTH 0x37FE *2
+#define PGM_CRC    0x37FF *2
+
 #endif

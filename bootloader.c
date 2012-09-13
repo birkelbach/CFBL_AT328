@@ -18,7 +18,7 @@
 #include "mcp2515.h"
 #include <util/delay_basic.h>
 #include "bootloader.h"
-#include <stdio.h> /* Debug only!!! */
+//#include <stdio.h> /* Debug only!!! */
 
 
 static inline void init(void);
@@ -194,7 +194,7 @@ can_poll(void)
 	wb[0]=CAN_READ;
 	wb[1]=CAN_CANINTF;
     spi_write(wb,rb,3);
-    sprintf(text, "Poll=[%2X]\n", rb[2]);
+    //sprintf(text, "Poll=[%2X]\n", rb[2]);
     uart_write(text, 10);
 
 	return rb[2];
@@ -217,7 +217,7 @@ can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data)
     
     //DEBUG!!
     for(int n=2; n < 15; n ++) {
-        sprintf(wb, "Rx=[%2d]=%X\n", n-2, rb[n]);
+        //sprintf(wb, "Rx=[%2d]=%X\n", n-2, rb[n]);
         uart_write((char *)wb, 11);
     }
     //This is NOT the correct way to reset the flags but....
@@ -228,16 +228,32 @@ can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data)
 
 }
 
+/* This is the function that we call periodically during the one
+   second startup time to see if we have a bootloader request on
+   the CAN Bus. */
+void
+bload_check(void) {
+    cli();
+	if(can_iflag) {
+        can_iflag=0;
+        /* Do some CAN Stuff Here */
+    }
+    sei();
+}
+
 /* This calculates a CRC16 for the program memory starting at 
    address 0x0000 and going up to count-1 */
 uint16_t
-pgmcrc(int16_t count) {
+pgmcrc(uint16_t count) {
     uint16_t carry;
     uint16_t crc = 0xffff;
-	uint16_t addr = 0;
- 
+	uint16_t addr = 0; 
+
     while(addr != count) {
         int i = 8;
+
+        bload_check();
+
         crc ^= pgm_read_byte_near(addr++);
         while(i--)
         {
@@ -251,26 +267,38 @@ pgmcrc(int16_t count) {
 
 /* Main Program Routine */
 
-
 int
 main(void)
 {
     uint8_t poll_result;
-	uint16_t can_id, pgm_crc;
-	uint8_t can_data[8];
+	uint16_t can_id, pgm_crc, count, cmp_crc;
+	uint8_t can_data[8], crcgood=0;
     
-    eeprom_write_byte(3, 0x44);
-
 	init();
 	uart_write("Start\n", 6);
 
-	pgm_crc = pgmcrc(28670);
-	if(pgm_crc == can_id) start_app();
+    /* Find the firmware size and checksum */
+	count      = pgm_read_word_near(PGM_LENGTH);
+    cmp_crc    = pgm_read_word_near(PGM_CRC);
+
+	/* Retrieve the Program Checksum */
+	pgm_crc = pgmcrc(count);
+	/* If it matches then set the good flag */
+	if(pgm_crc == cmp_crc)
+	    crcgood=1;
+
+	/* This timer expires at roughly one second after startup */
+	while(TCNT1 <= 0x2B00) /* Run this for about a second */
+        bload_check();
+    TCNT1 = 0x0000;
+    
+	if(crcgood) {
+	   start_app(); /* When we go here we ain't never comin' back */
+    }
+	
 
 	while(1) { /* For testing we'll run forever */
-	    /* The next can be removed if we do enough stuff in the loop */
-	    //while(TCNT1 <= 0x2B00); /* Run this for about a second */
-        //TCNT1 = 0x0000;
+
 
         _delay_loop_1(SPI_DELAY); /* Delay for CS to be high on MCP2515 */
 		poll_result = can_poll();
@@ -281,9 +309,7 @@ main(void)
 		    uart_write("R1\n",3);
 		    can_read(1, &can_id, can_data);
         }
-	}
-    
-		
+	}	
  	
     
     /* End of bootloader reset to applicaiton */
@@ -302,7 +328,8 @@ main(void)
 	    boot_spm_busy_wait(); 
     }
 
-
+              Byte addr, data 
+    eeprom_write_byte(3, 0x44);
 
 */
     
