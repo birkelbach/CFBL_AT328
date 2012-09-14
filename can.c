@@ -23,7 +23,7 @@
 #include "mcp2515.h"
 
 static inline uint8_t
-can_poll(void)
+can_poll_int(void)
 {
     uint8_t wb[2];
     uint8_t rb[2]={0,0};
@@ -36,7 +36,7 @@ can_poll(void)
 }
 
 void
-can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data) 
+can_read(uint8_t rxbuff, uint16_t *id, struct CanFrame *frame) 
 {
     uint8_t wb[15];
     uint8_t rb[15];
@@ -54,5 +54,6 @@ can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data)
     wb[1]=CAN_CANINTF;
     wb[2]=0x00;
     spi_write(wb,rb,3);
+    
 
 }

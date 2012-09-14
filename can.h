@@ -29,7 +29,13 @@
 #define BITRATE_500  2
 #define BITRATE_1000 3
 
-void can_read(uint8_t rxbuff, uint16_t *id, uint8_t* data);
+struct CanFrame {
+    uint16_t id;
+	uint8_t length;
+	uint8_t data[8];
+};
+
+void can_read(uint8_t rxbuff, uint16_t *id, struct CanFrame *frame);
 
 
 #endif

@@ -89,6 +89,11 @@ init_spi()
 {
     unsigned char x;
 
+	/* We use the 8 bit timer 0 to make sure we have the right delay
+	 * on our CS pin for the SPI to the CAN Controller */
+	TCCR0B=0x01; /* Set Timer/Counter 0 to clk/1 */
+    /* We use the 16 bit timer to handle the boot polling delay */
+
     /* Set MOSI, SCK and SS output, all others input */
     SPI_DDR |= (1<<SPI_MOSI)|(1<<SPI_SCK)|(1<<SPI_SS);
     SPI_PORT |= (1<<SPI_SS); /* Set the SS pin high to disable slave */
@@ -122,7 +127,6 @@ init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3)
     /* Reset the MCP2515 */
     wb[0]=CAN_RESET;
     spi_write(wb,rb,1);
-    _delay_loop_1(SPI_DELAY); /* Delay for CS to be high on MCP2515 */
     
     /* Sets up the Bit timing and interrupts in the MCP2515 */
     wb[0]=CAN_WRITE;
@@ -133,20 +137,16 @@ init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3)
     //wb[5]=0x1F; /* Turn on all TX and RX interrupts - CANINTE */
 	wb[5]=0x03;  /* Turn on RX interrupt bits - CANINTE */
 	spi_write(wb,rb,6);
-    _delay_loop_1(SPI_DELAY); /* Delay for CS to be high on MCP2515 */
 
     wb[1]=CAN_RXB0CTRL;
 	wb[2]=0x60; /* Set to Rx Standard Frames only - RXB0CTRL */
 	wb[3]=0x60; /* Set to Rx Standard Frames only - RXB1CTRL */
 	spi_write(wb,rb,4);
-    _delay_loop_1(SPI_DELAY); /* Delay for CS to be high on MCP2515 */
 
     /* Put the chip in Normal Mode */
     wb[1]=CAN_CANCTRL;
     wb[2]=0x00;
     spi_write(wb,rb,3);
-    _delay_loop_1(SPI_DELAY); /* Delay for CS to be high on MCP2515 */
-
 }
 
 /* Calls the initialization routines */
@@ -168,14 +168,13 @@ init(void)
 	init_can(cnf1, cnf2, cnf3);
 	
 	init_serial();
-	/* We use the 16 bit timer to handle the boot polling delay */
-    TCCR1B=0x05; /* Set Timer/Counter 1 to clk/1024 */
+	TCCR1B=0x05; /* Set Timer/Counter 1 to clk/1024 */
 	/* Move the Interrupt Vector table to the Bootloader section */
 	MCUCR = (1<<IVCE);
 	MCUCR = (1<<IVSEL);
 	EICRA = 0x02; /* Set INT0 to falling edge */
     EIMSK = 0x01; /* Turn on the INT0 interrupt */
-	sei();
+	sei();        /* Turn on interrupts */
 }
 
 
@@ -251,8 +250,8 @@ main(void)
 
 	while(1) { /* For testing we'll run forever */
 
-
-        _delay_loop_1(SPI_DELAY); /* Delay for CS to be high on MCP2515 */
+        bload_check();
+        _delay_loop_2(0xFFFF); /* Delay */
 
 /*		poll_result = can_poll();
 		if(poll_result & 0x01) {

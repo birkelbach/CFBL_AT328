@@ -35,7 +35,11 @@ void
 spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size)
 {
     uint8_t ptr = 0;
-    
+    /* The timer 0 delay is there to make sure that we have enough time
+       with the CS/SS bit high that the MCP2515 knows that we have a new
+       command.  This delay is roughly 23uSec.  To shorten the delay a
+       larger number than 0x00 could be writen below at reset time. */
+	while(!(TIFR0 & (1 << TOV0)));
     SPI_SS_LOW();
     while(ptr < size) {
         SPDR = write_buff[ptr];
@@ -44,4 +48,7 @@ spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size)
         ptr++;
     }
     SPI_SS_HIGH();
+	TCNT0 = 0;          /* Reset Timer/Counter */
+	TIFR0 |= (1<<TOV0); /* Reset Timer Overflow Flag */
+
 }
