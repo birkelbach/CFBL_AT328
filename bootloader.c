@@ -36,6 +36,8 @@
 #include "can.h"
 #include "util.h"
 //#include <stdio.h> /* Debug only!!! */
+#include <stdlib.h>
+#include <string.h>
 
 
 static inline void init(void);
@@ -182,14 +184,35 @@ init(void)
 /* This is the function that we call periodically during the one
    second startup time to see if we have a bootloader request on
    the CAN Bus. */
-void
+uint8_t
 bload_check(void) {
+    struct CanFrame frame;
+    int n;
+    char sout[5];
     cli();
 	if(can_iflag) {
         can_iflag=0;
+        can_read(0, &frame);
         /* Do some CAN Stuff Here */
+        /* TESTING ONLY */
+        uart_write("CAN", 3);
+        itoa(frame.id, sout, 16);
+        uart_write(sout, strlen(sout));
+        uart_write("D", 1);
+
+        for(n=0; n<frame.length; n++) {
+            itoa(frame.data[n], sout, 16);
+            if(frame.data[n] <= 0x0F) {
+                sout[1] = sout[0];
+                sout[0] = '0';
+            }
+            uart_write(sout, 2);
+        }
+        uart_write("\n", 1);
     }
     sei();
+    if(frame.id == 0x04) return 0;
+    else return 1;
 }
 
 /* This calculates a CRC16 for the program memory starting at 
@@ -235,8 +258,9 @@ main(void)
 	/* Retrieve the Program Checksum */
 	pgm_crc = pgmcrc(count);
 	/* If it matches then set the good flag */
-	if(pgm_crc == cmp_crc)
-	    crcgood=1;
+	if(pgm_crc == cmp_crc) {
+	    crcgood = 1;
+    }
 
 	/* This timer expires at roughly one second after startup */
 	while(TCNT1 <= 0x2B00) /* Run this for about a second */
