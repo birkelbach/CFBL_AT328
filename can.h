@@ -35,7 +35,7 @@ struct CanFrame {
 	uint8_t data[8];
 };
 
-void can_read(uint8_t rxbuff, uint16_t *id, struct CanFrame *frame);
+void can_read(uint8_t rxbuff, struct CanFrame *frame);
 
 
 #endif

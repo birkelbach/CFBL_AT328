@@ -18,6 +18,7 @@
  *  This file contains the source code for the CANBus interface functions
  */
 
+#include <string.h>
 #include "can.h"
 #include "util.h"
 #include "mcp2515.h"
@@ -36,7 +37,7 @@ can_poll_int(void)
 }
 
 void
-can_read(uint8_t rxbuff, uint16_t *id, struct CanFrame *frame) 
+can_read(uint8_t rxbuff, struct CanFrame *frame) 
 {
     uint8_t wb[15];
     uint8_t rb[15];
@@ -48,7 +49,11 @@ can_read(uint8_t rxbuff, uint16_t *id, struct CanFrame *frame)
         wb[1]=CAN_RXB1SIDH;
     }
     spi_write(wb,rb,15);
-    
+    frame->id =  rb[2]<<3;
+    frame->id |= rb[3]>>5;
+    frame->length = rb[6];
+    memcpy(frame->data, &rb[7], frame->length);
+
     //This is NOT the correct way to reset the flags but....
     wb[0]=CAN_WRITE;
     wb[1]=CAN_CANINTF;
