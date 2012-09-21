@@ -34,6 +34,7 @@
     jmp     start
     jmp     int0_isr
 	jmp     init_can
+    jmp     can_read
 
 .section .init2
 start:
@@ -54,7 +55,7 @@ start:
 .global start_app
 start_app:
     /* Reset the interrupt vector table to start at 0x0000
-	   and clear interrupts. */
+	   and clear interrupts.  Then jump to 0x0000. */
 	cli
     ldi r16, (1<<IVCE)
 	out _SFR_IO_ADDR(MCUCR), r16 

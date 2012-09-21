@@ -42,7 +42,7 @@
 
 static inline void init(void);
 void spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size);
-void init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3);
+void init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3, uint8_t iflags);
 
 /* Global Variables */
 uint8_t can_iflag;
@@ -121,7 +121,7 @@ init_spi()
    boot_util.h and util.S.
 */
 void
-init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3)
+init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3, uint8_t iflags)
 {
     uint8_t wb[8];
     uint8_t rb[8];
@@ -136,8 +136,9 @@ init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3)
     wb[2]=cnf3;
     wb[3]=cnf2;
     wb[4]=cnf1;
+    wb[5]=iflags;
     //wb[5]=0x1F; /* Turn on all TX and RX interrupts - CANINTE */
-	wb[5]=0x03;  /* Turn on RX interrupt bits - CANINTE */
+	//wb[5]=0x03;  /* Turn on RX interrupt bits - CANINTE */
 	spi_write(wb,rb,6);
 
     wb[1]=CAN_RXB0CTRL;
@@ -167,7 +168,7 @@ init(void)
 	else if(can_speed==BITRATE_500) cnf1=0x00; /* 500kbps */
 	else if(can_speed==BITRATE_1000) { cnf1=0x00; cnf2=0x92; cnf3=0x02; } /* 1Mbps */
     /* Initialize the MCP2515 */
-	init_can(cnf1, cnf2, cnf3);
+	init_can(cnf1, cnf2, cnf3, (1<<CAN_RX1IF) | (1<<CAN_RX0IF));
 	
 	init_serial();
 	TCCR1B=0x05; /* Set Timer/Counter 1 to clk/1024 */
@@ -244,12 +245,12 @@ pgmcrc(uint16_t count) {
 int
 main(void)
 {
-    uint8_t poll_result;
-	uint16_t can_id, pgm_crc, count, cmp_crc;
-	uint8_t can_data[8], crcgood=0;
-    
+    uint16_t pgm_crc, count, cmp_crc;
+	uint8_t crcgood=0;
+    char sout[8];    
+
 	init();
-	uart_write("Start\n", 6);
+	uart_write("\nStart\n", 7);
 
     /* Find the firmware size and checksum */
 	count      = pgm_read_word_near(PGM_LENGTH);
@@ -261,11 +262,15 @@ main(void)
 	if(pgm_crc == cmp_crc) {
 	    crcgood = 1;
     }
-
+    itoa(pgm_crc,sout,16);
+	uart_write("Checksum ", 9);
+	uart_write(sout,strlen(sout));
+	uart_write("\n",1);
 	/* This timer expires at roughly one second after startup */
 	while(TCNT1 <= 0x2B00) /* Run this for about a second */
         bload_check();
     TCNT1 = 0x0000;
+	uart_write("TIMEOUT\n",8);
     
 	if(crcgood) {
 	   start_app(); /* When we go here we ain't never comin' back */

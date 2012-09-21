@@ -41,12 +41,15 @@ can_read(uint8_t rxbuff, struct CanFrame *frame)
 {
     uint8_t wb[15];
     uint8_t rb[15];
+    uint8_t mask;  /* This is for the bit modify to restet the interrupt flag */
     
     wb[0]=CAN_READ;
     if(rxbuff==0) {
         wb[1]=CAN_RXB0SIDH;
+        mask = 1<<CAN_RX0IF;
     } else {
         wb[1]=CAN_RXB1SIDH;
+        mask = 1<<CAN_RX1IF;
     }
     spi_write(wb,rb,15);
     frame->id =  rb[2]<<3;
@@ -54,11 +57,12 @@ can_read(uint8_t rxbuff, struct CanFrame *frame)
     frame->length = rb[6];
     memcpy(frame->data, &rb[7], frame->length);
 
-    //This is NOT the correct way to reset the flags but....
-    wb[0]=CAN_WRITE;
+    /* Reset the interrupt flag with Bit Modify Command */
+    wb[0]=CAN_BIT_MODIFY;
     wb[1]=CAN_CANINTF;
-    wb[2]=0x00;
-    spi_write(wb,rb,3);
+    wb[2]=mask;
+    wb[3]=0x00;
+    spi_write(wb,rb,4);
     
 
 }
