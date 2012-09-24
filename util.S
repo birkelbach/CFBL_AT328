@@ -25,7 +25,7 @@
 .extern init_can
 
 /* This section is the bootloader function jump table.
-   Starting at the start of the .text section + 1 is the 
+   Starting at the start of the .text section + 2 is the 
    jmp for the first function.  This is so that code
    in the application portion of ROM can use these
    functions without worrying if they have moved within
@@ -33,8 +33,14 @@
 .section .init1
     jmp     start
     jmp     int0_isr
+    jmp     init_spi
+    jmp     spi_write
 	jmp     init_can
     jmp     can_read
+    jmp     can_send
+    jmp     can_mode
+    jmp     can_mask
+    jmp     can_filter
 
 .section .init2
 start:

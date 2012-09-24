@@ -130,7 +130,13 @@
 #define CAN_RX_STATUS 0xB0
 #define CAN_BIT_MODIFY 0x05
 
-
-
+//Modes of Operation
+#define CAN_MODE_MASK      0xE0
+#define CAN_MODE_CONFIG    0x80
+#define CAN_MODE_NORMAL    0x00
+#define CAN_MODE_SLEEP     0x20
+#define CAN_MODE_LISTEN    0x60
+#define CAN_MODE_LOOPBACK  0x40
+#define CAN_MODE_QUERY     0xF0
 
 #endif

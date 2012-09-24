@@ -94,8 +94,7 @@ init_spi()
 	/* We use the 8 bit timer 0 to make sure we have the right delay
 	 * on our CS pin for the SPI to the CAN Controller */
 	TCCR0B=0x01; /* Set Timer/Counter 0 to clk/1 */
-    /* We use the 16 bit timer to handle the boot polling delay */
-
+    
     /* Set MOSI, SCK and SS output, all others input */
     SPI_DDR |= (1<<SPI_MOSI)|(1<<SPI_SCK)|(1<<SPI_SS);
     SPI_PORT |= (1<<SPI_SS); /* Set the SS pin high to disable slave */
@@ -137,8 +136,6 @@ init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3, uint8_t iflags)
     wb[3]=cnf2;
     wb[4]=cnf1;
     wb[5]=iflags;
-    //wb[5]=0x1F; /* Turn on all TX and RX interrupts - CANINTE */
-	//wb[5]=0x03;  /* Turn on RX interrupt bits - CANINTE */
 	spi_write(wb,rb,6);
 
     wb[1]=CAN_RXB0CTRL;
@@ -168,7 +165,8 @@ init(void)
 	else if(can_speed==BITRATE_500) cnf1=0x00; /* 500kbps */
 	else if(can_speed==BITRATE_1000) { cnf1=0x00; cnf2=0x92; cnf3=0x02; } /* 1Mbps */
     /* Initialize the MCP2515 */
-	init_can(cnf1, cnf2, cnf3, (1<<CAN_RX1IF) | (1<<CAN_RX0IF));
+	//init_can(cnf1, cnf2, cnf3, (1<<CAN_RX1IF) | (1<<CAN_RX0IF));
+	init_can(cnf1, cnf2, cnf3, 0x00);
 	
 	init_serial();
 	TCCR1B=0x05; /* Set Timer/Counter 1 to clk/1024 */
@@ -176,8 +174,8 @@ init(void)
 	MCUCR = (1<<IVCE);
 	MCUCR = (1<<IVSEL);
 	EICRA = 0x02; /* Set INT0 to falling edge */
-    EIMSK = 0x01; /* Turn on the INT0 interrupt */
-	sei();        /* Turn on interrupts */
+    //EIMSK = 0x01; /* Turn on the INT0 interrupt */
+	//sei();        /* Turn on interrupts */
 }
 
 
@@ -189,31 +187,38 @@ uint8_t
 bload_check(void) {
     struct CanFrame frame;
     int n;
+    uint8_t result,rxsel=0;
     char sout[5];
-    cli();
-	if(can_iflag) {
-        can_iflag=0;
-        can_read(0, &frame);
-        /* Do some CAN Stuff Here */
-        /* TESTING ONLY */
-        uart_write("CAN", 3);
-        itoa(frame.id, sout, 16);
-        uart_write(sout, strlen(sout));
-        uart_write("D", 1);
+    
+    result = can_poll_int();
 
-        for(n=0; n<frame.length; n++) {
-            itoa(frame.data[n], sout, 16);
-            if(frame.data[n] <= 0x0F) {
-                sout[1] = sout[0];
-                sout[0] = '0';
-            }
-            uart_write(sout, 2);
+    if(result) {
+        if(result & (1<<CAN_RX1IF)) {
+            rxsel = 2;
+        } else if(result & (1<<CAN_RX0IF)) {
+            rxsel = 1;
         }
-        uart_write("\n", 1);
+        if(rxsel) {
+            can_read(rxsel-1, &frame);
+            /* Do some CAN Stuff Here */
+            /* TESTING ONLY */
+            uart_write("CAN", 3);
+            itoa(frame.id, sout, 16);
+            uart_write(sout, strlen(sout));
+            uart_write("D", 1);
+
+            for(n=0; n<frame.length; n++) {
+                itoa(frame.data[n], sout, 16);
+                if(frame.data[n] <= 0x0F) {
+                    sout[1] = sout[0];
+                    sout[0] = '0';
+                }
+                uart_write(sout, 2);
+            }
+            uart_write("\n", 1);
+         }
     }
-    sei();
-    if(frame.id == 0x04) return 0;
-    else return 1;
+    return 0;
 }
 
 /* This calculates a CRC16 for the program memory starting at 

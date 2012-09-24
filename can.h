@@ -35,7 +35,11 @@ struct CanFrame {
 	uint8_t data[8];
 };
 
+uint8_t can_poll_int(void);
 void can_read(uint8_t rxbuff, struct CanFrame *frame);
-
+void can_send(uint8_t txbuff, struct CanFrame frame);
+uint8_t can_mode(uint8_t mode, uint8_t wait);
+uint8_t can_mask(uint8_t rxbuff, uint16_t idmask, uint16_t datamask);
+uint8_t can_filter(uint8_t regid, uint16_t idfilter, uint16_t datafilter);
 
 #endif
