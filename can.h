@@ -23,7 +23,7 @@
 
 #include <avr/io.h>
 
-//Bitrate definitions for the init_can() function
+//Bitrate definitions for the can_init() function
 #define BITRATE_125  0
 #define BITRATE_250  1
 #define BITRATE_500  2
@@ -35,9 +35,10 @@ struct CanFrame {
 	uint8_t data[8];
 };
 
+void can_init(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3, uint8_t iflags);
 uint8_t can_poll_int(void);
 void can_read(uint8_t rxbuff, struct CanFrame *frame);
-void can_send(uint8_t txbuff, struct CanFrame frame);
+uint8_t can_send(uint8_t txbuff, uint8_t priority, struct CanFrame frame);
 uint8_t can_mode(uint8_t mode, uint8_t wait);
 uint8_t can_mask(uint8_t rxbuff, uint16_t idmask, uint16_t datamask);
 uint8_t can_filter(uint8_t regid, uint16_t idfilter, uint16_t datafilter);

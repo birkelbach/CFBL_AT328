@@ -35,7 +35,7 @@
     jmp     int0_isr
     jmp     init_spi
     jmp     spi_write
-	jmp     init_can
+	jmp     can_init
     jmp     can_read
     jmp     can_send
     jmp     can_mode

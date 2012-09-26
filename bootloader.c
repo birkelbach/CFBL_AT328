@@ -41,12 +41,11 @@
 
 
 static inline void init(void);
-void spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size);
-void init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3, uint8_t iflags);
+//void spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size);
 
 /* Global Variables */
 uint8_t can_iflag;
-
+uint8_t node_id;
 
 void
 int0_isr(void) {
@@ -110,44 +109,7 @@ init_spi()
 
 
 
-/* Sets up the MCP2515 chip.  
-   Sets the CNFx registers according to the arguments.
-   Turns on all Rx and Tx interrupts.
-   Receive Standard frames only.
-   Put the chip in 'Normal' mode.
 
-   This function is exported with the jump table.  See
-   boot_util.h and util.S.
-*/
-void
-init_can(uint8_t cnf1, uint8_t cnf2, uint8_t cnf3, uint8_t iflags)
-{
-    uint8_t wb[8];
-    uint8_t rb[8];
-
-    /* Reset the MCP2515 */
-    wb[0]=CAN_RESET;
-    spi_write(wb,rb,1);
-    
-    /* Sets up the Bit timing and interrupts in the MCP2515 */
-    wb[0]=CAN_WRITE;
-    wb[1]=CAN_CNF3;
-    wb[2]=cnf3;
-    wb[3]=cnf2;
-    wb[4]=cnf1;
-    wb[5]=iflags;
-	spi_write(wb,rb,6);
-
-    wb[1]=CAN_RXB0CTRL;
-	wb[2]=0x60; /* Set to Rx Standard Frames only - RXB0CTRL */
-	wb[3]=0x60; /* Set to Rx Standard Frames only - RXB1CTRL */
-	spi_write(wb,rb,4);
-
-    /* Put the chip in Normal Mode */
-    wb[1]=CAN_CANCTRL;
-    wb[2]=0x00;
-    spi_write(wb,rb,3);
-}
 
 /* Calls the initialization routines */
 static inline void
@@ -164,10 +126,22 @@ init(void)
 	if(can_speed==BITRATE_250) cnf1=0x01;      /* 250kbps */
 	else if(can_speed==BITRATE_500) cnf1=0x00; /* 500kbps */
 	else if(can_speed==BITRATE_1000) { cnf1=0x00; cnf2=0x92; cnf3=0x02; } /* 1Mbps */
-    /* Initialize the MCP2515 */
+    node_id = eeprom_read_byte(EE_NODE_ID);
+
+	/* Initialize the MCP2515 */
 	//init_can(cnf1, cnf2, cnf3, (1<<CAN_RX1IF) | (1<<CAN_RX0IF));
-	init_can(cnf1, cnf2, cnf3, 0x00);
-	
+	can_init(cnf1, cnf2, cnf3, 0x00);
+
+    /* Set the masks and filters to listen for Node Specific Messages
+       on RX 0 */
+	can_mode(CAN_MODE_CONFIG, 0);
+    can_mask(0, 0x0F00, 0x0000);
+    can_filter(CAN_RXF0SIDH, 0x0700, 0x0000);
+    can_filter(CAN_RXF1SIDH, 0x0700, 0x0000);
+    can_mask(1, 0x07C0, 0x0000);
+    can_filter(CAN_RXF2SIDH, 0x06E0, 0x0000);
+    can_mode(CAN_MODE_NORMAL, 0);
+
 	init_serial();
 	TCCR1B=0x05; /* Set Timer/Counter 1 to clk/1024 */
 	/* Move the Interrupt Vector table to the Bootloader section */
@@ -202,6 +176,8 @@ bload_check(void) {
             can_read(rxsel-1, &frame);
             /* Do some CAN Stuff Here */
             /* TESTING ONLY */
+			sout[0] = '0' + rxsel -1;
+			uart_write(sout, 1);
             uart_write("CAN", 3);
             itoa(frame.id, sout, 16);
             uart_write(sout, strlen(sout));

@@ -123,6 +123,7 @@
 #define CAN_READ_RX_BUFFER_1 0x94
 #define CAN_WRITE 0x02
 #define CAN_LOAD_TX_BUFFER 0x40
+#define CAN_RTS  0x80
 #define CAN_RTS0 0x81
 #define CAN_RTS1 0x82
 #define CAN_RTS2 0x84

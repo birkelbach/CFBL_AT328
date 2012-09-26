@@ -21,9 +21,9 @@
 
 
 // EEPROM Data Locations 
-#define EE_CAN_SPEED 0x00
-#define EE_NODE_ID   0x01
-#define EE_BAUD      0x02
+#define EE_CAN_SPEED (const uint8_t *)0x00
+#define EE_NODE_ID   (const uint8_t *)0x01
+#define EE_BAUD      (const uint8_t *)0x02
 
 // Program Memory Locations
 #define PGM_LENGTH 0x37FE *2
