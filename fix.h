@@ -16,25 +16,15 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  */
-#ifndef _BOOTLOADER_H
-#define _BOOTLOADER_H
+#ifndef _CANFIX_H
+#define _CANFIX_H
 
+/* Identifier Groups */
+#define FIX_2WAY_CHANNEL  0x6E0
+#define FIX_NODE_SPECIFIC 0x700
 
-// EEPROM Data Locations 
-#define EE_CAN_SPEED (const uint8_t *)0x00
-#define EE_NODE_ID   (const uint8_t *)0x01
-#define EE_BAUD      (const uint8_t *)0x02
-
-// Verification Code for Firmware Update
-#define BL_VERIFY_LSB    0x01
-#define BL_VERIFY_MSB    0xf7
-
-
-// Program Memory Locations
-#define PGM_LENGTH 0x37FE *2
-#define PGM_CRC    0x37FF *2
-
-//#define UART_DEBUG 0x01
+/* Node Specific Message Command Codes */
+#define FIX_FIRMWARE  7
 
 
 #endif

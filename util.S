@@ -32,7 +32,6 @@
    the bootloader */
 .section .init1
     jmp     start
-    jmp     int0_isr
     jmp     init_spi
     jmp     spi_write
 	jmp     can_init
@@ -69,3 +68,9 @@ start_app:
 	out _SFR_IO_ADDR(MCUCR), r16 
 	/* Jump to the start of the program */
     jmp 0x0000
+
+
+.global reset
+reset:
+    cli
+    jmp start

@@ -48,6 +48,6 @@ void spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size);
 
 /* util.S functions */
 void start_app(void);
-
+void reset(void);
 
 #endif

@@ -114,8 +114,8 @@ can_read(uint8_t rxbuff, struct CanFrame *frame)
 uint8_t
 can_send(uint8_t txbuff, uint8_t priority, struct CanFrame frame)
 {
-    uint8_t wb[13];
-    uint8_t rb[13];
+    uint8_t wb[16];
+    uint8_t rb[16];
 
     /* First we read the TXREQ flag from the given TX buffer */
     wb[0] = CAN_READ;
@@ -132,7 +132,7 @@ can_send(uint8_t txbuff, uint8_t priority, struct CanFrame frame)
     wb[6] = 0x00;           /* TXBxEID0 */
     wb[7] = frame.length;
     memcpy(&wb[8], frame.data, frame.length);
-    spi_write(wb, rb, 7 + frame.length);
+    spi_write(wb, rb, 8 + frame.length);
 
     /* Set RTS */
     wb[0] = CAN_RTS | (1<<txbuff);
@@ -166,47 +166,38 @@ can_mode(uint8_t mode, uint8_t wait)
     return 0;
 }
 
-/* Set the acceptance mask for a given Rx Buffer.  Since we are only
-   using standard frames we use the extended frame mask as a data mask.
-   See the MCP2515 Datasheet for details. */
-uint8_t
-can_mask(uint8_t rxbuff, uint16_t idmask, uint16_t datamask)
+/* Set the acceptance mask for a given Rx Buffer. */
+void
+can_mask(uint8_t rxbuff, uint16_t idmask)
 {
     uint8_t wb[6];
     uint8_t rb[6];
-    // TODO: Need to check the mode and return error if not in config mode
+    
     wb[0]=CAN_WRITE;
     if(rxbuff==0) {
         wb[1]=CAN_RXM0SIDH;
     } else {
         wb[1]=CAN_RXM1SIDH;
     }
-	wb[2] = idmask >> 3;       /* RXMxSIDH */
-    wb[3] = idmask << 5;       /* RXMxSIDL */
-    wb[4] = datamask >> 8;     /* RXMxEID8 */
-    wb[5] = datamask & 0x00FF; /* RXMxEID0 */
-    spi_write(wb,rb,6);
-    return 0;
+	wb[2] = idmask >> 3;  /* RXMxSIDH */
+    wb[3] = idmask << 5;  /* RXMxSIDL */
+    spi_write(wb,rb,4);
 }
 
 /* Set the acceptance filter.  There are six filters and they can be
    selected here with regid.  The first two (0 and 1) are for RX0 and
-   2-5 are for RX1. Since we are only interested in standard frames
-   we use the extended frame filters as a data filter.  See the MCP2515
-   datasheet for details. regid is assumed to be the address in the 
-   MCP2515 for the filter. see mcp2515.h */
-uint8_t
-can_filter(uint8_t regid, uint16_t idfilter, uint16_t datafilter)
+   2-5 are for RX1. See the MCP2515 datasheet for details. regid is 
+   assumed to be the address in the  MCP2515 for the filter. 
+   see mcp2515.h */
+void
+can_filter(uint8_t regid, uint16_t idfilter)
 {
-    uint8_t wb[6];
-    uint8_t rb[6];
-	// TODO: Need to chck the mode and return error if not in config mode
+    uint8_t wb[4];
+    uint8_t rb[4];
+	
     wb[0] = CAN_WRITE;
     wb[1] = regid;
     wb[2] = idfilter >> 3;       /* RXFxSIDH */
     wb[3] = idfilter << 5;       /* RXFxSIDL */
-    wb[4] = datafilter >> 8;     /* RXFxEID8 */
-    wb[5] = datafilter & 0x00FF; /* RXFxEID0 */
-    spi_write(wb,rb,6);
-    return 0;
+    spi_write(wb,rb,4);
 }
