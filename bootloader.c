@@ -289,12 +289,11 @@ main(void)
 	uart_write("\n", 1);
 #endif
     /* Find the firmware size and checksum */
-	count      = pgm_read_word_near(PGM_LENGTH);
-    cmp_crc    = pgm_read_word_near(PGM_CRC);
+	count      = eeprom_read_word(EE_PGM_LENGTH);
+    cmp_crc    = eeprom_read_word(EE_PGM_CRC);
 
 	/* Retrieve the Program Checksum */
-	//pgm_crc = pgmcrc(count);
-	pgm_crc = pgmcrc(64);  //*** JUST FOR TESTING ***//
+	pgm_crc = pgmcrc(count);
 	/* If it matches then set the good flag */
 	if(pgm_crc == cmp_crc) {
 	    crcgood = 1;

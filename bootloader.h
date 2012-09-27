@@ -21,20 +21,19 @@
 
 
 // EEPROM Data Locations 
-#define EE_CAN_SPEED (const uint8_t *)0x00
-#define EE_NODE_ID   (const uint8_t *)0x01
-#define EE_BAUD      (const uint8_t *)0x02
+#define EE_CAN_SPEED  (const uint8_t *)0x00
+#define EE_NODE_ID    (const uint8_t *)0x01
+#define EE_BAUD       (const uint8_t *)0x02
+#define EE_PGM_LENGTH (const uint16_t *)0x04
+#define EE_PGM_CRC    (const uint16_t *)0x06
+
 
 // Verification Code for Firmware Update
 #define BL_VERIFY_LSB    0x01
 #define BL_VERIFY_MSB    0xf7
 
-
-// Program Memory Locations
-#define PGM_LENGTH 0x37FE *2
-#define PGM_CRC    0x37FF *2
-
-//#define UART_DEBUG 0x01
+// Comment this out to make all the UART debugging stuff go away.
+#define UART_DEBUG 0x01
 
 
 #endif
