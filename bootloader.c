@@ -115,7 +115,7 @@ init(void)
 	uint8_t can_speed = 0;
 
 	init_spi();
-
+    DDRB |= (1<<PB0);
  /* Set the CAN speed.  The values for 125k are the defaults so 0 is ignored
     and bad values also result in 125k */
     can_speed = eeprom_read_byte(EE_CAN_SPEED);
@@ -149,6 +149,32 @@ init(void)
 	EICRA = 0x02; /* Set INT0 to falling edge */
 }
 
+/* This function stores the CRC value and the length in the
+   last two words of the program flash. It does a 
+   read/modify/write type operation on the whole last page. */
+void
+store_crc(uint16_t crc, uint16_t length)
+{    
+    uint16_t n, i=0;
+    
+    /* Run through the page and store the information that is already there
+       in the temporary buffer. */
+    for(n=PGM_LAST_PAGE_START; n<(PGM_LAST_PAGE_START + PGM_PAGE_SIZE-4); n+=2) {
+        i = pgm_read_word_near(n);
+        boot_page_fill(n, i);
+    }
+    /* Add the length and crc to the buffer and write it out. */
+    boot_page_fill(PGM_LENGTH, length);
+    boot_page_fill(PGM_CRC, crc);
+    boot_page_erase(PGM_LAST_PAGE_START);
+    boot_spm_busy_wait(); 	
+    boot_page_write(PGM_LAST_PAGE_START);
+    boot_spm_busy_wait(); 
+}
+
+/* This function polls the MCP2515 for a CAN frame in RX1 and read
+   the frame.  If it reads a frame from our 2-way channel it returns
+   0.  If it's some other data a 1 and if a timeout a 2 */
 static inline uint8_t
 read_channel(uint8_t channel, struct CanFrame *frame)
 {
@@ -165,9 +191,11 @@ read_channel(uint8_t channel, struct CanFrame *frame)
             /* Check that it's one of ours */
             if(frame->id == FIX_2WAY_CHANNEL + channel *2)
                 return 0;
+            else
+                return 1;
         }
     }
-    return 1; /* Timeout */
+    return 2; /* Timeout */
 }
 
 /* This function handles the two way communication to firmware
@@ -288,9 +316,10 @@ main(void)
 	uart_write(sout, strlen(sout));
 	uart_write("\n", 1);
 #endif
+
     /* Find the firmware size and checksum */
-	count      = eeprom_read_word(EE_PGM_LENGTH);
-    cmp_crc    = eeprom_read_word(EE_PGM_CRC);
+	count   = pgm_read_word_near(PGM_LENGTH);
+    cmp_crc = pgm_read_word_near(PGM_CRC);
 
 	/* Retrieve the Program Checksum */
 	pgm_crc = pgmcrc(count);
@@ -317,6 +346,7 @@ main(void)
 	
     /* If CRC is no good we sit here and look for a firmware update command
        forever. */
+    PORTB |= (1<<PB0);
     while(1) { 
 
         bload_check();

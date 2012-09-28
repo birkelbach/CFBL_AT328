@@ -24,9 +24,6 @@
 #define EE_CAN_SPEED  (const uint8_t *)0x00
 #define EE_NODE_ID    (const uint8_t *)0x01
 #define EE_BAUD       (const uint8_t *)0x02
-#define EE_PGM_LENGTH (const uint16_t *)0x04
-#define EE_PGM_CRC    (const uint16_t *)0x06
-
 
 // Verification Code for Firmware Update
 #define BL_VERIFY_LSB    0x01
@@ -34,6 +31,11 @@
 
 // Comment this out to make all the UART debugging stuff go away.
 #define UART_DEBUG 0x01
+
+#define PGM_PAGE_SIZE 128 /* Page size in Bytes */
+#define PGM_LAST_PAGE_START (0x3FC0U * 2) /* Starting address of the last page of flash */
+#define PGM_LENGTH (const uint16_t *)0x7FFC
+#define PGM_CRC    (const uint16_t *)0x7FFE
 
 
 #endif

@@ -5,7 +5,7 @@ This is a bootloader program for AVR ATMega328P.  It could be used with other AV
 
 The bootstrap.c file is the main source code file.  The Util.S is an assembly language source file for optimizations and specific code placement.  The -nostartfiles directive is passed to the linker to make the code as small as possible so the util.S file has the initializations that we'll need for the program to operate correctly.
 
-Right now the bootstart is set to address 0x3800 and is 2048 words long.  The firmware should be between 0x0000 and 0x37FF.  The checksum is held in program memory location 0x37FF, and the program length is in program memory location 0x37FE.  These memory locations may change if the bootloader is smaller than anticipated and can be held in 1k of program space.
+Right now the bootstart is set to address 0x3800 and is 2048 words long.  The firmware should be between 0x0000 and 0x37FF. These memory locations may change if the bootloader is smaller than anticipated and can be held in 1k of program space.
 
 <<EEPROM Data>>
 Addr   Desc                 Notes
