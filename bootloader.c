@@ -207,11 +207,107 @@ void
 load_firmware(uint8_t channel)
 {
     struct CanFrame frame;
+	int n;
+    uint8_t result, length = 0, offset = 0;
+    uint16_t address = 0xFFFF;
+	uint16_t temp, crc;
+	uint8_t to_count=0;
 #ifdef UART_DEBUG
+    char sout[5];
+
 	uart_write("Load Firmware\n", 14);
 #endif
-    read_channel(channel, &frame);
-    reset();
+    while(1) {
+        result = read_channel(channel, &frame);
+        if(address == 0xFFFF) { /* We're waiting for a command */
+            /* We ignore failures while we are waiting for commands
+               on the channel. */
+            if(result == 0) {
+                /* We may as well get the address here */
+                address = *(uint16_t *)(&frame.data[1]);
+                if(frame.data[0] == 0x01) { /* Fill Buffer */
+				    length = frame.data[3];
+#ifdef UART_DEBUG
+                    uart_write("FB ", 3);
+                    itoa(address, sout, 10);
+                    uart_write(sout, strlen(sout));
+					uart_write(" ", 1);
+					itoa(length, sout, 10);
+					uart_write(sout, strlen(sout));
+					uart_write("\n", 1);
+#endif
+                } else if(frame.data[0] == 0x02) { /* Page Erase */
+				    boot_page_erase(address);
+#ifdef UART_DEBUG
+                    uart_write("EP ", 3);
+					itoa(address, sout, 10);
+                    uart_write(sout, strlen(sout));
+					uart_write("\n", 1);
+#endif
+					address = 0xFFFF; /* So we don't try to read data */
+                } else if(frame.data[0] == 0x03) { /* Page Write */
+				    boot_page_write(address);
+#ifdef UART_DEBUG
+                    uart_write("WP ", 3);
+					itoa(address, sout, 10);
+                    uart_write(sout, strlen(sout));
+					uart_write("\n", 1);
+#endif
+					address = 0xFFFF; /* So we don't try to read data */
+                } else if(frame.data[0] == 0x04) { /* Abort */
+#ifdef UART_DEBUG
+                    uart_write("A\n", 2);
+#endif
+					address = 0xFFFF; /* So we don't try to read data */
+                } else if(frame.data[0] == 0x05) { /* Complete */
+				    crc = *(uint16_t *)(&frame.data[1]);
+                    temp = *(uint16_t *)(&frame.data[3]); /* Size */
+                    store_crc(crc, temp);
+#ifdef UART_DEBUG
+					uart_write("C\n", 2);
+#endif
+                    reset();
+                }
+                frame.id++; /* Add one for the response channel */
+                can_send(0, 3, frame); /* Send Response */
+            } else if(result == 2) { /* Timeout */
+			    to_count++;
+				if(to_count > 30) return;
+			}
+        } else { /* We're waiting for buffer data. */
+            if(result == 0) {
+			    for(n=0; n<frame.length; n+=2) {
+				    temp = *(uint16_t *)(&frame.data[n]);
+					boot_page_fill(address+offset+n, temp);
+				}
+				offset+=frame.length;
+#ifdef UART_DEBUG
+				uart_write(".", 1);
+#endif
+                /* The following is an ack for buffer load data
+				   I don't know that we really need it. */
+				//frame.id++;
+				//frame.data[0] = offset;
+				//frame.length = 1;
+				//can_send(0, 3, frame);
+				if(offset >= length) {
+				    address = 0xFFFF; /* To get out of here */
+					offset = 0;
+#ifdef UART_DEBUG
+					uart_write("\n", 1);
+#endif
+                }
+
+			} else if(result == 2) { /* This is a timeout */
+                address = 0xFFFF;
+				offset = 0;
+#ifdef UART_DEBUG
+				uart_write("t\n", 2); /* TODO: Should send an abort */
+#endif
+			}
+        }
+
+    }
 }
 
 /* TESTING ONLY */
@@ -268,7 +364,7 @@ bload_check(void) {
             frame.data[2] = 0x00;
             can_send(0, 3, frame);
 			/* Jump to load firmware */
-            load_firmware(channel); /* We never come back from here */
+            load_firmware(channel); /* We should never come back from here */
         } 
     }
     return 0;
@@ -299,7 +395,6 @@ pgmcrc(uint16_t count) {
 }
 
 /* Main Program Routine */
-
 int
 main(void)
 {
@@ -355,20 +450,3 @@ main(void)
 	}	
 }
 
-
-
-/* CODE SNIPPITS 
-
-	for(n=0; n<64; n++) {
-        boot_page_fill(n*2, n);
-		boot_page_erase(0x0000);
-        boot_spm_busy_wait(); 	
-        boot_page_write(0x0000);
-	    boot_spm_busy_wait(); 
-    }
-
-              Byte addr, data 
-    eeprom_write_byte(3, 0x44);
-
-*/
-    

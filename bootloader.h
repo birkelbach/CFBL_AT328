@@ -30,7 +30,7 @@
 #define BL_VERIFY_MSB    0xf7
 
 // Comment this out to make all the UART debugging stuff go away.
-#define UART_DEBUG 0x01
+//#define UART_DEBUG 0x01
 
 #define PGM_PAGE_SIZE 128 /* Page size in Bytes */
 #define PGM_LAST_PAGE_START (0x3FC0U * 2) /* Starting address of the last page of flash */
