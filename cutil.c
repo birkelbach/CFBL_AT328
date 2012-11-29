@@ -22,8 +22,6 @@
 #include <avr/io.h>
 #include "util.h"
 
-
-
 /* Busy loop SPI write.  Takes the contents of *write_buff
    and sends each bit out the SPI port in turn.  Receives each
    bit into *read_buff at the end of each write.  Size indicates
@@ -50,5 +48,4 @@ spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size)
     SPI_SS_HIGH();
 	TCNT0 = 0;          /* Reset Timer/Counter */
 	TIFR0 |= (1<<TOV0); /* Reset Timer Overflow Flag */
-
 }

@@ -25,6 +25,7 @@
  * .text section works much better.  It is therefore unwise to try
  * and combine this code with any application code.
  */
+
 #include <avr/io.h>
 #include <avr/boot.h>
 #include <avr/interrupt.h>
@@ -39,9 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 static inline void init(void);
-//void spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size);
 
 /* Global Variables */
 uint8_t node_id;
@@ -102,11 +101,6 @@ init_spi()
     x = SPDR;
 }
 
-
-
-
-
-
 /* Calls the initialization routines */
 static inline void
 init(void)
@@ -115,7 +109,9 @@ init(void)
 	uint8_t can_speed = 0;
 
 	init_spi();
+ /* Set the direction for the status LEDs' */
     DDRB |= (1<<PB0);
+    DDRB |= (1<<PB1);
  /* Set the CAN speed.  The values for 125k are the defaults so 0 is ignored
     and bad values also result in 125k */
     can_speed = eeprom_read_byte(EE_CAN_SPEED);
@@ -172,7 +168,7 @@ store_crc(uint16_t crc, uint16_t length)
     boot_spm_busy_wait(); 
 }
 
-/* This function polls the MCP2515 for a CAN frame in RX1 and read
+/* This function polls the MCP2515 for a CAN frame in RX1 and reads
    the frame.  If it reads a frame from our 2-way channel it returns
    0.  If it's some other data a 1 and if a timeout a 2 */
 static inline uint8_t
@@ -350,7 +346,7 @@ bload_check(void) {
      /* If the filters and masks are okay this should be
         a firware update command addressed to us. */
         can_read(0, &frame);
-		print_frame(frame);
+		print_frame(frame); /* Debugging Stuff */
         if(frame.data[0] == node_id && frame.data[1] == FIX_FIRMWARE &&
            frame.data[2] == BL_VERIFY_LSB && frame.data[3] == BL_VERIFY_MSB) {
             /* Save the data from the frame that we need later. */  
@@ -446,7 +442,6 @@ main(void)
 
         bload_check();
         _delay_loop_2(0xFFFF); /* Delay */
-
 	}	
 }
 

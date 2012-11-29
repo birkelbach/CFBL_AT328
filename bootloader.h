@@ -19,7 +19,6 @@
 #ifndef _BOOTLOADER_H
 #define _BOOTLOADER_H
 
-
 // EEPROM Data Locations 
 #define EE_CAN_SPEED  (const uint8_t *)0x00
 #define EE_NODE_ID    (const uint8_t *)0x01
@@ -36,6 +35,5 @@
 #define PGM_LAST_PAGE_START (0x3FC0U * 2) /* Starting address of the last page of flash */
 #define PGM_LENGTH (const uint16_t *)0x7FFC
 #define PGM_CRC    (const uint16_t *)0x7FFE
-
 
 #endif
