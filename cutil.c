@@ -32,7 +32,7 @@
 void
 spi_write(uint8_t *write_buff, uint8_t *read_buff, uint8_t size)
 {
-    uint8_t ptr = 0;
+    uint8_t ptr = 0;  
     /* The timer 0 delay is there to make sure that we have enough time
        with the CS/SS bit high that the MCP2515 knows that we have a new
        command.  This delay is roughly 23uSec.  To shorten the delay a

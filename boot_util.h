@@ -29,6 +29,12 @@
 
 #define BOOT_START 0x3800
 
+/* Bitrate definitions */
+#define BITRATE_125  0
+#define BITRATE_250  1
+#define BITRATE_500  2
+#define BITRATE_1000 3
+
 struct CanFrame {
     uint16_t id;
     uint8_t length;

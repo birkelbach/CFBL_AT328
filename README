@@ -19,9 +19,52 @@
 * the MCP 2515 CAN controller IC.
  
 This is a bootloader for the Atmel ATMega328P micrcontroller.  It is designed to be used
-with CAN-FIX.
+with the CAN-FIX protocol.
 
 CAN-FIX is a CANBus based communication protocol for moving data between aircraft systems.
 FIX stands for Flight Information eXchange.
 
-There is a project file included in the repository for AVR Studio 4.19
+The bootloader code makes a few assumptions.  First the CANBus controller IC is a
+Microchip MCP2515 that is connected to the SPI port of the microcontroller.  The 
+Slave Select pin used is PB2.  This can be changed by editing the util.h header file
+and setting the correct pins for the SPI port.  The clock frequency for the current
+version is 11.0592 MHz.  This is due to the use of the RS-232 port on the serial
+prototype.  The changes that would need to be made are in the timing of the SPI port
+SS pin high delay of the MCP2515 and a couple of time delays that are in the firmware
+update code and the one second start up delay of the bootloader.
+
+The BOOTSZ fuses should be set to 2048 and the BOOTRST fuse should be set.
+
+There are also some assumptions about the locations of the bitrate and node numbers
+in the EEPROM.  Check the source code files for details.
+
+There is a project file included in the repository for AVR Studio 4.19.  A Makefile
+will be coming soon.
+
+The basic idea of this bootloader code is to allow new firmware to be loaded into the
+microcontroller through the can port of the MCP2515.  This will allow changes to be made
+to the device without having to remove it from service.  The bootloader starts by
+calculating a checksum of the code that is already contained in the firmware to
+verify that it is correct.  At that same time a 1 second timer is started.  The 16 bit
+timer TMR1 is used for this purpose.  If the checksum is okay, the bootloader waits
+until the 1 second timer has elapsed and then starts executing the code contained in 
+the main program memory of the device and no firmware is loaded.  If the checksum
+fails the program is not started and the bootloader falls into an infinite loop waiting
+for a valid firmware upload request message to come over the CAN port.
+
+Periodically during the checksum calculation and also during the remainder of the 1
+second delay, the bootloader checks the CAN port to see if a valid firmware update
+request message has been received.  If it has then it immediately begins the
+firmware updating process.  When the process is complete the checksum and the length
+of the main program are written into the last two words of the program memory (just
+below the bootloader code).  Once this is done the checksum calculation is repeated
+and the process starts over again.  If the process was sucessful then main program
+is started.
+
+The firmware writing process is very simple.  The firmware writing program takes most
+of the responsibility for making sure the process works correctly.  There is a
+firmware utility written in Python that is part of the CAN-FIX Utilities package.
+<<TODO:  Insert address to the Utilities package here>>
+There is also a specification detailing the protocol.
+<<TODO:  Insert address to the protocol here>>
+
