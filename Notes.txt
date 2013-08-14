@@ -1,11 +1,18 @@
 PetraSoft Aviation, CANFIX Bootloader, Copyright 2011 - Phil Birkelbach
 Last edited 2012-09-12
 
-This is a bootloader program for AVR ATMega328P.  It could be used with other AVR's I'm sure but for now this is the one that I am using.  It's a CANfix bootloader.  It assumes that the CAN protocol is obtained through a Microchip MCP2515 CAN Controller that is connected to the uC via SPI.
+This is a bootloader program for AVR ATMega328P.  It could be used with other AVR's I'm sure but for now this is the
+one that I am using.  It's a CANfix bootloader.  It assumes that the CAN protocol is obtained through a Microchip
+MCP2515 CAN Controller that is connected to the uC via SPI.
 
-The bootstrap.c file is the main source code file.  The Util.S is an assembly language source file for optimizations and specific code placement.  The -nostartfiles directive is passed to the linker to make the code as small as possible so the util.S file has the initializations that we'll need for the program to operate correctly.
+The bootstrap.c file is the main source code file.  The Util.S is an assembly language source file for
+optimizations and specific code placement.  The -nostartfiles directive is passed to the linker to make
+the code as small as possible so the util.S file has the initializations that we'll need for the program
+to operate correctly.
 
-Right now the bootstart is set to address 0x3800 and is 2048 words long.  The firmware should be between 0x0000 and 0x37FF. These memory locations may change if the bootloader is smaller than anticipated and can be held in 1k of program space.
+Right now the bootstart is set to address 0x3800 and is 2048 words long.  The firmware should be between
+0x0000 and 0x37FF. These memory locations may change if the bootloader is smaller than anticipated and
+can be held in 1k of program space.
 
 <<EEPROM Data>>
 Addr   Desc                 Notes
